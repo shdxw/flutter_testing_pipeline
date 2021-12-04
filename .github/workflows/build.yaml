@@ -1,0 +1,78 @@
+name: build flutter app
+
+on:
+  # button setup
+  workflow_dispatch:
+  #   push:
+  #     tags:
+  #       - 'mobile-up-v*.*.*'
+
+jobs:
+  build:
+    #     runs-on: macos-latest
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./flutter_testing_pipeline
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-java@v1
+        with:
+          java-version: '12.x'
+      - uses: subosito/flutter-action@v1
+        with:
+          channel: stable
+      - run: flutter pub get
+      - run: flutter test
+      - run: flutter build apk --release
+          #       - run: |
+          #           flutter build ios --no-codesign
+          #           cd build/ios/iphoneos
+          #           mkdir Payload
+          #           cd Payload
+          #           ln -s ../Runner.app
+          #           cd ..
+          #           zip -r app.ipa Payload
+          #       - uses: ncipollo/release-action@v1
+          #         with:
+          #           artifacts: "Android/flutter_grade/build/app/outputs/flutter-apk/app-release.apk,Android/flutter_grade/build/ios/iphoneos/app.ipa"
+          #           token: ${{ secrets.GITHUB_TOKEN }}
+          #           commit: main
+          #           tag: mobile-up-v0.0.${{ github.run_number }}
+
+      - run: |
+          mkdir -pv path
+          pwd
+          ls
+          cp -v build/app/outputs/flutter-apk/app-release.apk path/app-release.apk
+          #         cp -v build/ios/iphoneos/app.ipa path/app.ipa
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: build-artifact
+          #         path: /Users/runner/work/DromUpGrade/DromUpGrade/Android/flutter_grade/path
+          path: /home/runner/work/flutter_testing_pipeline/path
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v2
+        with:
+          name: build-artifact
+      - run: ls -R
+
+        #типо дальнейшими манипуляциями можно засунуть артефакт на firebase
+
+#      - uses: wzieba/Firebase-Distribution-Github-Action@v1.3.2
+#        with:
+#          appId:
+#          token:
+#          groups: testers
+#          file: app-release.apk
+#       - uses: wzieba/Firebase-Distribution-Github-Action@v1.3.2
+#         with:
+#           appId:
+#           token:
+#           groups: testers
+#           file: app.ipa
